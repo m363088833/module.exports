@@ -85,6 +85,29 @@ library.findImagesBox = function(data, Point, time) {
 /* 
  * @ morePermissions {boolean} true: 开启更多权限 */
 library.getPermission = function(morePermissions) {
+    //开启更多权限
+    if (morePermissions == true) {
+        var Thread3 = threads.start(function() {
+            //关闭内存泄露检测
+            $debug.setMemoryLeakDetectionEnabled(false);
+            console.warn("已关闭内存泄露检测");
+            //忽略电池优化
+            if (!$power_manager.isIgnoringBatteryOptimizations()) {
+                toastLog("请开启忽略电池优化功能");
+                $power_manager.requestIgnoreBatteryOptimizations().waitFor();
+            } else {
+                console.warn("已开启忽略电池优化");
+            }
+            //前台服务
+            if (!$settings.isEnabled("foreground_service")) {
+                toastLog("请开启前台服务");
+                $settings.setEnabled("foreground_service", true).waitFor();; //开启前台服务
+            } else {
+                console.warn('已开启前台服务');
+            }
+        });
+    }
+    
     //无障碍服务
     if (auto.service == null) {
         toastLog("请开启无障碍服务");
@@ -96,7 +119,7 @@ library.getPermission = function(morePermissions) {
     //悬浮窗权限
     if (!floaty.checkPermission()) {
         toast("请开启悬浮窗和后台弹出界面权限");
-        floaty.requestPermission();
+        floaty.requestPermission().waitFor();;
     } else {
         console.warn("已获得悬浮窗权限");
     }
@@ -117,28 +140,6 @@ library.getPermission = function(morePermissions) {
         console.warn("已获得截图权限");
     });
     Thread2.join(); //等待join2线程结束
-    //开启更多权限
-    if (morePermissions == true) {
-        var Thread3 = threads.start(function() {
-            //关闭内存泄露检测
-            $debug.setMemoryLeakDetectionEnabled(false);
-            console.warn("已关闭内存泄露检测");
-            //忽略电池优化
-            if (!$power_manager.isIgnoringBatteryOptimizations()) {
-                toastLog("请开启忽略电池优化功能");
-                $power_manager.requestIgnoreBatteryOptimizations();
-            } else {
-                console.warn("已开启忽略电池优化");
-            }
-            //前台服务
-            if (!$settings.isEnabled("foreground_service")) {
-                toastLog("请开启前台服务");
-                $settings.setEnabled("foreground_service", true); //开启前台服务
-            } else {
-                console.warn('已开启前台服务');
-            }
-        });
-    }
 }
 
 
@@ -386,13 +387,13 @@ library.loopFindImages = function(templat, option, img) {
 library.getFilesFromPath = function(path) {
     var arrDir = [];
     var arrFile = [];
-    try {
+    /*try {
         var rp = /^([/][^\/:*?<>|]+[/]?)+$/;
         if (rp.test(path) == false) throw "非法文件路径,getFilesFromPath(?);" + path;
     } catch (err) {
         log(err);
         exit();
-    }
+    }*/
     //获取path目录下所有文件夹和文件
     var arr = files.listDir(path);
     //遍历文件和文件夹
@@ -442,7 +443,7 @@ library.closeApp = function(AppName) {
         back();
     }
     //判断该字符串是否是以 (com.)开头的APP包名
-    if (!this.getStringType(AppName).type_PackageName) { //如果不是包名
+    if (!this.getStringType(AppName).PackageName) { //如果不是包名
         var newAppName = AppName; //应用名称
         var packageName = app.getPackageName(AppName); //获取应用的包名
     } else {
@@ -726,9 +727,11 @@ library.获取字符串中最后一个斜杠前后内容 = function(str) {
 
 library.定时停止脚本 = function(time) {
     threads.start(function() {
-        console.log("定时停止脚本,开始倒计时...");
+        toastLog("定时停止脚本_开始");
         sleep(time);
-        // console.hide();//隐藏控制台
+        console.hide();
+        toastLog("定时停止脚本_结束");
+        // home();
         exit();
     });
 }
